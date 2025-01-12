@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const auth = require('../middleware/auth');
 const Activity = require('../models/Activity');
-const { uploadToGCS, deleteFromGCS } = require('../config/storage');
+const { uploadFile, deleteFile, validateFile } = require('../config/storageService');
 
 const router = express.Router();
 const upload = multer({
@@ -33,16 +33,14 @@ router.post('/', auth, upload.single('file'), async (req, res, next) => {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
-    if (!allowedTypes.includes(file.mimetype)) {
-      return res.status(400).json({
-        message: 'Invalid file type. Only JPEG, PNG, GIF images and PDF files are allowed.',
-      });
+    try {
+      validateFile(file);
+    } catch (error) {
+      return res.status(400).json({ message: error.message });
     }
 
-    // Upload to Google Cloud Storage
-    const fileUrl = await uploadToGCS(file, `users/${req.user.userId}/activities`);
+    // Upload file to selected storage provider
+    const fileUrl = await uploadFile(file, `users/${req.user.userId}/activities`);
 
     const activity = new Activity({
       user: req.user.userId,
@@ -98,8 +96,8 @@ router.delete('/:id', auth, async (req, res, next) => {
       return res.status(404).json({ message: 'Activity not found' });
     }
 
-    // Delete file from Google Cloud Storage
-    await deleteFromGCS(activity.fileUrl);
+    // Delete file from storage
+    await deleteFile(activity.fileUrl);
     await activity.deleteOne();
 
     res.json({ message: 'Activity deleted successfully' });

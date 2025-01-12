@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const auth = require('../middleware/auth');
 const User = require('../models/User');
-const { uploadToGCS, deleteFromGCS } = require('../config/storage');
+const { uploadFile, deleteFile, validateFile } = require('../config/storageService');
 
 const router = express.Router();
 const upload = multer({
@@ -44,12 +44,13 @@ router.put('/picture', auth, upload.single('profilePicture'), async (req, res, n
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-    if (!allowedTypes.includes(file.mimetype)) {
-      return res.status(400).json({
-        message: 'Invalid file type. Only JPEG, PNG, and GIF images are allowed.',
+    try {
+      validateFile(file, {
+        maxSize: 2 * 1024 * 1024, // 2MB limit
+        allowedTypes: ['image/jpeg', 'image/png', 'image/gif'],
       });
+    } catch (error) {
+      return res.status(400).json({ message: error.message });
     }
 
     const user = await User.findById(req.user.userId);
@@ -60,7 +61,7 @@ router.put('/picture', auth, upload.single('profilePicture'), async (req, res, n
     // Delete old profile picture if exists
     if (user.profilePicture) {
       try {
-        await deleteFromGCS(user.profilePicture);
+        await deleteFile(user.profilePicture);
       } catch (error) {
         console.error('Error deleting old profile picture:', error);
         // Continue with the upload even if deletion fails
@@ -68,7 +69,7 @@ router.put('/picture', auth, upload.single('profilePicture'), async (req, res, n
     }
 
     // Upload new profile picture
-    const fileUrl = await uploadToGCS(file, `users/${req.user.userId}/profile`);
+    const fileUrl = await uploadFile(file, `users/${req.user.userId}/profile`);
     user.profilePicture = fileUrl;
     await user.save();
 
