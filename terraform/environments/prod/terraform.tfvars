@@ -1,0 +1,6 @@
+project_id     = "your-project-id"
+region         = "us-central1"
+environment    = "prod"
+app_name       = "kids-activities"
+domain_name    = "kids-activities.example.com"
+storage_class  = "STANDARD"
