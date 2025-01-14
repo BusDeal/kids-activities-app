@@ -30,6 +30,16 @@ const activitySchema = new mongoose.Schema({
   thumbnailUrl: {
     type: String,
   },
+  placeholderUrl: {
+    type: String,
+  },
+  aiDescription: {
+    type: String,
+  },
+  isPublic: {
+    type: Boolean,
+    default: true,
+  },
 }, {
   timestamps: true,
 });

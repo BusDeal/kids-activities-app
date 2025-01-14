@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-const auth = (req, res, next) => {
+const requireAuth = (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     
@@ -16,4 +16,21 @@ const auth = (req, res, next) => {
   }
 };
 
-module.exports = auth;
+const optionalAuth = (req, res, next) => {
+  try {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = decoded;
+    }
+    next();
+  } catch (error) {
+    // Continue without user info if token is invalid
+    next();
+  }
+};
+
+module.exports = {
+  requireAuth,
+  optionalAuth
+};

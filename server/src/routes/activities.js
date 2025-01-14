@@ -1,8 +1,9 @@
 const express = require('express');
 const multer = require('multer');
-const auth = require('../middleware/auth');
+const { requireAuth, optionalAuth } = require('../middleware/auth');
 const Activity = require('../models/Activity');
 const { uploadFile, deleteFile, validateFile } = require('../config/storageService');
+const { generatePlaceholder, extractDescription } = require('../services/aiService');
 
 const router = express.Router();
 const upload = multer({
@@ -12,19 +13,58 @@ const upload = multer({
   },
 });
 
-// Get all activities for the logged-in user
-router.get('/', auth, async (req, res, next) => {
+// Get all activities
+router.get('/', optionalAuth, async (req, res, next) => {
   try {
-    const activities = await Activity.find({ user: req.user.userId })
-      .sort({ createdAt: -1 });
-    res.json(activities);
+    let query = {};
+    if (req.user) {
+      // If user is logged in, show their activities and public activities
+      query = { $or: [{ user: req.user.userId }, { isPublic: true }] };
+    } else {
+      // If user is not logged in, show only public activities
+      query = { isPublic: true };
+    }
+
+    const activities = await Activity.find(query)
+      .sort({ createdAt: -1 })
+      .populate('user', 'name');
+
+    // Add isOwner flag to each activity
+    const activitiesWithOwnership = activities.map(activity => ({
+      ...activity.toObject(),
+      isOwner: req.user ? activity.user._id.toString() === req.user.userId : false
+    }));
+
+    res.json(activitiesWithOwnership);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get a single activity
+router.get('/:id', optionalAuth, async (req, res, next) => {
+  try {
+    const activity = await Activity.findById(req.params.id)
+      .populate('user', 'name');
+
+    if (!activity) {
+      return res.status(404).json({ message: 'Activity not found' });
+    }
+
+    // Add isOwner flag
+    const activityWithOwnership = {
+      ...activity.toObject(),
+      isOwner: req.user ? activity.user._id.toString() === req.user.userId : false
+    };
+
+    res.json(activityWithOwnership);
   } catch (error) {
     next(error);
   }
 });
 
 // Upload a new activity
-router.post('/', auth, upload.single('file'), async (req, res, next) => {
+router.post('/', requireAuth, upload.single('file'), async (req, res, next) => {
   try {
     const { title, description, type } = req.body;
     const file = req.file;
@@ -42,6 +82,18 @@ router.post('/', auth, upload.single('file'), async (req, res, next) => {
     // Upload file to selected storage provider
     const fileUrl = await uploadFile(file, `users/${req.user.userId}/activities`);
 
+    // Generate placeholder and extract description using AI
+    const [placeholderBuffer, aiDescription] = await Promise.all([
+      generatePlaceholder(type),
+      extractDescription(file)
+    ]);
+
+    // Upload placeholder image
+    const placeholderUrl = await uploadFile(
+      { buffer: placeholderBuffer, mimetype: 'image/jpeg', originalname: 'placeholder.jpg' },
+      `users/${req.user.userId}/placeholders`
+    );
+
     const activity = new Activity({
       user: req.user.userId,
       title,
@@ -49,6 +101,8 @@ router.post('/', auth, upload.single('file'), async (req, res, next) => {
       type,
       fileUrl,
       fileType: file.mimetype,
+      placeholderUrl,
+      aiDescription
     });
 
     await activity.save();
@@ -62,7 +116,7 @@ router.post('/', auth, upload.single('file'), async (req, res, next) => {
 });
 
 // Update an activity
-router.put('/:id', auth, async (req, res, next) => {
+router.put('/:id', requireAuth, async (req, res, next) => {
   try {
     const { title, description } = req.body;
     const activity = await Activity.findOne({
@@ -85,7 +139,7 @@ router.put('/:id', auth, async (req, res, next) => {
 });
 
 // Delete an activity
-router.delete('/:id', auth, async (req, res, next) => {
+router.delete('/:id', requireAuth, async (req, res, next) => {
   try {
     const activity = await Activity.findOne({
       _id: req.params.id,
@@ -96,10 +150,13 @@ router.delete('/:id', auth, async (req, res, next) => {
       return res.status(404).json({ message: 'Activity not found' });
     }
 
-    // Delete file from storage
-    await deleteFile(activity.fileUrl);
-    await activity.deleteOne();
+    // Delete files from storage
+    await Promise.all([
+      deleteFile(activity.fileUrl),
+      activity.placeholderUrl && deleteFile(activity.placeholderUrl)
+    ]);
 
+    await activity.deleteOne();
     res.json({ message: 'Activity deleted successfully' });
   } catch (error) {
     next(error);
