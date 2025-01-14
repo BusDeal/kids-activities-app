@@ -15,11 +15,6 @@ resource "google_cloud_run_service" "backend" {
         }
 
         env {
-          name  = "PORT"
-          value = "8080"
-        }
-
-        env {
           name  = "NODE_ENV"
           value = var.environment
         }
@@ -53,6 +48,16 @@ resource "google_cloud_run_service" "backend" {
           name  = "GOOGLE_CLOUD_BUCKET_NAME"
           value = var.storage_bucket_name
         }
+
+        env {
+          name = "GOOGLE_APPLICATION_CREDENTIALS"
+          value_from {
+            secret_key_ref {
+              name = google_secret_manager_secret.gcp_credentials.secret_id
+              key  = "latest"
+            }
+          }
+        }
       }
 
       service_account_name = google_service_account.cloudrun_service_account.email
@@ -78,7 +83,15 @@ resource "google_secret_manager_secret" "jwt_secret" {
   secret_id = "${var.app_name}-${var.environment}-jwt-secret"
   
   replication {
-    automatic = true
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret" "gcp_credentials" {
+  secret_id = "${var.app_name}-${var.environment}-gcp-credentials"
+  
+  replication {
+    auto {}
   }
 }
 
@@ -88,8 +101,20 @@ resource "google_secret_manager_secret_version" "jwt_secret" {
   secret_data = var.jwt_secret
 }
 
+resource "google_secret_manager_secret_version" "gcp_credentials" {
+  secret = google_secret_manager_secret.gcp_credentials.id
+  
+  secret_data = base64decode(var.gcp_credentials_base64)
+}
+
 resource "google_secret_manager_secret_iam_member" "secret_access" {
   secret_id = google_secret_manager_secret.jwt_secret.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.cloudrun_service_account.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "gcp_credentials_access" {
+  secret_id = google_secret_manager_secret.gcp_credentials.id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.cloudrun_service_account.email}"
 }

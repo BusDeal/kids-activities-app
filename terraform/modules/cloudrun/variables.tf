@@ -43,3 +43,8 @@ variable "domain_name" {
   type        = string
   default     = ""
 }
+
+variable "gcp_credentials_base64" {
+  description = "Base64-encoded GCP service account key JSON"
+  type        = string
+}

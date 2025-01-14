@@ -2,10 +2,17 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const fs = require('fs');
 const authRoutes = require('./routes/auth');
 const activityRoutes = require('./routes/activities');
 const profileRoutes = require('./routes/profile');
 const errorHandler = require('./middleware/error');
+
+// Write GCP credentials to file
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  fs.writeFileSync('/tmp/gcp-credentials.json', process.env.GOOGLE_APPLICATION_CREDENTIALS);
+  process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/gcp-credentials.json';
+}
 
 dotenv.config();
 
@@ -25,6 +32,16 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/profile', profileRoutes);
+
+// Handle 404
+app.use((req, res) => {
+  res.status(404).json({
+    message: 'Route not found',
+    path: req.path,
+    method: req.method,
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Error handling
 app.use((req, res, next) => {
