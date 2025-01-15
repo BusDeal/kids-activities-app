@@ -95,7 +95,7 @@ const Home = () => {
                 <CardMedia
                   component="img"
                   height="140"
-                  image={activity.thumbnailUrl || '/placeholder.png'}
+                  image={activity.placeholderUrl || '/placeholder.png'}
                   alt={activity.title}
                 />
                 <CardContent>
@@ -103,7 +103,7 @@ const Home = () => {
                     {activity.title}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" noWrap>
-                    {activity.description}
+                    {activity.aiDescription}
                   </Typography>
                   <Typography variant="caption" color="text.secondary" display="block">
                     {new Date(activity.createdAt).toLocaleDateString()}

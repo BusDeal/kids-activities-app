@@ -37,7 +37,7 @@ const ActivityDetails = () => {
           setActivity(foundActivity);
           setEditData({
             title: foundActivity.title,
-            description: foundActivity.description,
+            description: foundActivity.aiDescription,
           });
         } else {
           setError('Activity not found');
@@ -123,9 +123,11 @@ const ActivityDetails = () => {
             </Box>
           </Box>
 
-          <Typography variant="body1" paragraph>
-            {activity.description}
-          </Typography>
+          {activity.aiDescription.split('\n').map((line, index) => (
+            <Typography key={index} variant="body1" paragraph>
+                {line}
+            </Typography>
+            ))}
 
           <Box sx={{ mt: 3 }}>
             {activity.fileType.startsWith('image/') ? (
