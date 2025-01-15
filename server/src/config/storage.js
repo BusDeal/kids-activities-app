@@ -11,6 +11,7 @@ const bucket = storage.bucket(bucketName);
 
 const uploadToGCS = async (file, folder = '') => {
   try {
+    console.log("GOOGLE_APPLICATION_CREDENTIALS:", process.env.GOOGLE_APPLICATION_CREDENTIALS);
     const fileName = `${folder}/${Date.now()}-${file.originalname}`;
     const blob = bucket.file(fileName);
     const blobStream = blob.createWriteStream({

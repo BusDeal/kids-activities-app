@@ -2,6 +2,7 @@ const OpenAI = require('openai');
 const { Storage } = require('@google-cloud/storage');
 const sharp = require('sharp');
 const path = require('path');
+const pdfParser = require('pdf-parse');
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -43,11 +44,12 @@ const extractDescription = async (file) => {
     if (file.mimetype === 'application/pdf') {
       // Extract text from PDF using pdf-parse or similar library
       // For now, we'll skip this part
-      text = 'PDF document';
+      const pdfData = await pdfParser(file.buffer);
+      text = pdfData.text;
     } else if (file.mimetype.startsWith('image/')) {
       // Use OpenAI's GPT-4 Vision API to analyze the image
       const response = await openai.chat.completions.create({
-        model: "gpt-4-vision-preview",
+        model: "gpt-4o",
         messages: [
           {
             role: "user",

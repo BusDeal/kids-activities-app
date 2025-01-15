@@ -10,10 +10,10 @@ const profileRoutes = require('./routes/profile');
 const errorHandler = require('./middleware/error');
 
 // Write GCP credentials to file
-if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+/* if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
   fs.writeFileSync('/tmp/gcp-credentials.json', process.env.GOOGLE_APPLICATION_CREDENTIALS);
   process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/gcp-credentials.json';
-}
+} */
 
 
 

@@ -32,7 +32,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
     // Add isOwner flag to each activity
     const activitiesWithOwnership = activities.map(activity => ({
       ...activity.toObject(),
-      isOwner: req.user ? activity.user._id.toString() === req.user.userId : false
+      isOwner: req.user ? activity.user == null? false : activity.user.toString() === req.user.userId : false
     }));
 
     res.json(activitiesWithOwnership);
@@ -105,6 +105,8 @@ router.post('/', requireAuth, upload.single('file'), async (req, res, next) => {
       aiDescription,
       isPublic: isPublic === 'false' ? false : true
     });
+
+    console.log(activity);
 
     await activity.save();
     res.status(201).json(activity);
