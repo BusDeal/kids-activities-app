@@ -10,6 +10,7 @@ RUN npm ci --only=production
 
 # Copy app source
 COPY . .
+COPY service-account-key.json /app/service-account-key.json
 
 # Set environment variables
 ENV NODE_ENV=production

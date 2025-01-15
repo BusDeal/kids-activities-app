@@ -1,15 +1,13 @@
 const { Storage } = require('@google-cloud/storage');
 
 // Initialize storage
-const storage = new Storage({
-  projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
-  credentials: {
-    client_email: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
-    private_key: process.env.GOOGLE_CLOUD_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-  },
-});
+const storage = new Storage();
 
-const bucket = storage.bucket(process.env.GOOGLE_CLOUD_BUCKET_NAME);
+const bucketName = process.env.GOOGLE_CLOUD_BUCKET_NAME;
+if (!bucketName) {
+  throw new Error('GOOGLE_CLOUD_BUCKET_NAME environment variable is required');
+}
+const bucket = storage.bucket(bucketName);
 
 const uploadToGCS = async (file, folder = '') => {
   try {
@@ -29,15 +27,9 @@ const uploadToGCS = async (file, folder = '') => {
       });
 
       blobStream.on('finish', async () => {
-        // Make the file public
-        try {
-          await blob.makePublic();
-          const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-          resolve(publicUrl);
-        } catch (error) {
-          console.error('Error making file public:', error);
-          reject(new Error('Failed to make file public'));
-        }
+        // Generate public URL (bucket is already public)
+        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+        resolve(publicUrl);
       });
 
       blobStream.end(file.buffer);

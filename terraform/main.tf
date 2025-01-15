@@ -28,7 +28,7 @@ module "cloudrun" {
   region            = var.region
   project_id        = var.project_id
   backend_image     = local.backend_image
-  mongodb_uri       = "mongodb+srv://user:pass@host/db"  # Replace with actual MongoDB URI
+  mongodb_uri       = "mongodb+srv://vidyasagarkota:0xKEPb92mf71YPWM @cluster0.mww1w.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"  # Replace with actual MongoDB URI
   jwt_secret        = random_password.jwt_secret.result
   storage_bucket_name = module.storage.bucket_name
   domain_name       = var.domain_name

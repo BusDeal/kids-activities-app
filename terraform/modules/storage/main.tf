@@ -28,10 +28,10 @@ resource "google_storage_bucket" "app_storage" {
   }
 }
 
-resource "google_storage_bucket_iam_member" "app_storage_viewer" {
+resource "google_storage_bucket_iam_binding" "public_rule" {
   bucket = google_storage_bucket.app_storage.name
   role   = "roles/storage.objectViewer"
-  member = "allUsers"
+  members = ["allUsers"]
 }
 
 resource "google_service_account" "storage_account" {
@@ -39,10 +39,12 @@ resource "google_service_account" "storage_account" {
   display_name = "Storage Service Account for ${var.app_name} ${var.environment}"
 }
 
-resource "google_storage_bucket_iam_member" "storage_admin" {
+resource "google_storage_bucket_iam_binding" "storage_admin" {
   bucket = google_storage_bucket.app_storage.name
   role   = "roles/storage.admin"
-  member = "serviceAccount:${google_service_account.storage_account.email}"
+  members = [
+    "serviceAccount:${google_service_account.storage_account.email}"
+  ]
 }
 
 resource "google_service_account_key" "storage_account_key" {

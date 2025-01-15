@@ -1,6 +1,6 @@
-project_id     = "your-project-id"
+project_id     = "mock-interview-444416"
 region         = "us-central1"
 environment    = "prod"
 app_name       = "kids-activities"
-domain_name    = "kids-activities.example.com"
+domain_name    = "geethashree.kota.today"
 storage_class  = "STANDARD"
