@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const fs = require('fs');
+dotenv.config();
 const authRoutes = require('./routes/auth');
 const activityRoutes = require('./routes/activities');
 const profileRoutes = require('./routes/profile');
@@ -14,7 +15,7 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
   process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/gcp-credentials.json';
 }
 
-dotenv.config();
+
 
 const app = express();
 

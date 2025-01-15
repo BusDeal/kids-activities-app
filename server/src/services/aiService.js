@@ -1,22 +1,21 @@
-const { Configuration, OpenAIApi } = require('openai');
+const OpenAI = require('openai');
 const { Storage } = require('@google-cloud/storage');
 const sharp = require('sharp');
 const path = require('path');
 
-const configuration = new Configuration({
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-const openai = new OpenAIApi(configuration);
 
 const generatePlaceholder = async (fileType) => {
   try {
-    const response = await openai.createImage({
+    const response = await openai.images.generate({
       prompt: `A colorful, kid-friendly illustration representing ${fileType}. Style: cute, playful, and educational. Safe for children.`,
       n: 1,
       size: "256x256",
     });
 
-    const imageUrl = response.data.data[0].url;
+    const imageUrl = response.data[0].url;
     const imageResponse = await fetch(imageUrl);
     const imageBuffer = await imageResponse.arrayBuffer();
 
@@ -47,12 +46,20 @@ const extractDescription = async (file) => {
       text = 'PDF document';
     } else if (file.mimetype.startsWith('image/')) {
       // Use OpenAI's GPT-4 Vision API to analyze the image
-      const response = await openai.createImageAnalysis({
-        image: file.buffer,
+      const response = await openai.chat.completions.create({
         model: "gpt-4-vision-preview",
-        prompt: "Describe this image in a way that's engaging for children. Focus on educational aspects and keep it brief (2-3 sentences)."
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Describe this image in a way that's engaging for children. Focus on educational aspects and keep it brief (2-3 sentences)." },
+              { type: "image_url", image_url: { url: `data:${file.mimetype};base64,${file.buffer.toString('base64')}` } }
+            ]
+          }
+        ],
+        max_tokens: 100
       });
-      text = response.data.choices[0].text;
+      text = response.choices[0].message.content;
     }
 
     if (!text) {

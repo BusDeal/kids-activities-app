@@ -66,7 +66,7 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
 // Upload a new activity
 router.post('/', requireAuth, upload.single('file'), async (req, res, next) => {
   try {
-    const { title, description, type } = req.body;
+    const { title, description, type, isPublic = true } = req.body;
     const file = req.file;
 
     if (!file) {
@@ -102,7 +102,8 @@ router.post('/', requireAuth, upload.single('file'), async (req, res, next) => {
       fileUrl,
       fileType: file.mimetype,
       placeholderUrl,
-      aiDescription
+      aiDescription,
+      isPublic: isPublic === 'false' ? false : true
     });
 
     await activity.save();

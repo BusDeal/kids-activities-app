@@ -1,6 +1,6 @@
 const express = require('express');
 const multer = require('multer');
-const auth = require('../middleware/auth');
+const { requireAuth, optionalAuth } = require('../middleware/auth');
 const User = require('../models/User');
 const { uploadFile, deleteFile, validateFile } = require('../config/storageService');
 
@@ -13,7 +13,7 @@ const upload = multer({
 });
 
 // Update profile
-router.put('/', auth, async (req, res, next) => {
+router.put('/', optionalAuth, async (req, res, next) => {
   try {
     const { name, age, grade, interests, theme } = req.body;
     const user = await User.findById(req.user.userId);
@@ -36,7 +36,7 @@ router.put('/', auth, async (req, res, next) => {
 });
 
 // Update profile picture
-router.put('/picture', auth, upload.single('profilePicture'), async (req, res, next) => {
+router.put('/picture', requireAuth, upload.single('profilePicture'), async (req, res, next) => {
   try {
     const file = req.file;
 
